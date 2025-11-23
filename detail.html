@@ -1,0 +1,29 @@
+<!-- detail.html -->
+<div style="font-family:Inter,Arial; padding:16px; background:#fff; border-radius:8px;">
+  <h2 id="title">Detail BUMD</h2>
+  <div id="content"></div>
+  <div style="margin-top:12px;">
+    <button id="expX" style="padding:8px 10px;">Export Excel</button>
+    <button id="expP" style="padding:8px 10px; margin-left:8px;">Export PDF</button>
+  </div>
+</div>
+<script>
+const WEB = "REPLACE_WITH_YOUR_WEB_APP_URL"; // ganti
+const params = new URLSearchParams(window.location.search);
+const name = params.get('bumd') || params.get('name') || "PDAM Tirta Medal";
+document.getElementById("title").innerText = "Detail "+name;
+
+async function load(){
+  const res = await fetch(WEB + "?action=detail&bumd=" + encodeURIComponent(name));
+  const j = await res.json();
+  if (j.status !== "success"){ document.getElementById("content").innerText = j.message || "No data"; return; }
+  const rows = j.data;
+  let html = "<table style='width:100%; border-collapse:collapse; font-size:13px;'><thead><tr style='background:#f3f3f3;'><th style='padding:8px;border:1px solid #eee;'>Timestamp</th><th style='padding:8px;border:1px solid #eee;'>Pencapaian</th><th style='padding:8px;border:1px solid #eee;'>Target</th><th style='padding:8px;border:1px solid #eee;'>%</th><th style='padding:8px;border:1px solid #eee;'>Catatan</th></tr></thead><tbody>";
+  rows.forEach(r=> html += `<tr><td style='padding:8px;border:1px solid #eee;'>${r.timestamp}</td><td style='padding:8px;border:1px solid #eee;'>${r.pencapaian}</td><td style='padding:8px;border:1px solid #eee;'>${r.target}</td><td style='padding:8px;border:1px solid #eee;'>${r.persentase}</td><td style='padding:8px;border:1px solid #eee;'>${r.catatan}</td></tr>`);
+  html += "</tbody></table>";
+  document.getElementById("content").innerHTML = html;
+}
+document.getElementById("expX").onclick = () => window.open(WEB + "?action=export&type=excel&bumd=" + encodeURIComponent(name));
+document.getElementById("expP").onclick = () => window.open(WEB + "?action=export&type=pdf&bumd=" + encodeURIComponent(name));
+load();
+</script>

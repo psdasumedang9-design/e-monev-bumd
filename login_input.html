@@ -1,0 +1,97 @@
+<!-- login_input.html - embed in Canva (login & input) -->
+<div style="max-width:720px; font-family:Inter,Arial; background:#fff; padding:18px; border-radius:8px;">
+  <div id="loginBox">
+    <h3 style="margin:0 0 10px 0;">Login BUMD</h3>
+    <input id="user" placeholder="Username" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"><br><br>
+    <input id="pass" type="password" placeholder="Password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"><br><br>
+    <button id="btnLogin" style="padding:10px 14px; background:#1f6fb3; color:#fff; border:none; border-radius:6px;">Login</button>
+    <div id="loginMsg" style="color:#c00; margin-top:8px;"></div>
+  </div>
+
+  <div id="inputForm" style="display:none;">
+    <h3>Input Laporan <span id="bumdName" style="color:#1f6fb3;"></span></h3>
+    <label>Pencapaian</label><br><input id="pencapaian" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"><br><br>
+    <label>Target</label><br><input id="target" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"><br><br>
+    <label>Persentase (%)</label><br><input id="persentase" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"><br><br>
+    <label>Catatan</label><br><textarea id="catatan" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px;"></textarea><br><br>
+    <button id="btnSend" style="padding:10px 14px; background:#2a9d8f; color:#fff; border:none; border-radius:6px;">Kirim</button>
+    <button id="btnLogout" style="padding:10px 14px; margin-left:8px; background:#e76f51; color:#fff; border:none; border-radius:6px;">Logout</button>
+    <div id="inputMsg" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script>
+const WEB_APP_URL = "REPLACE_WITH_YOUR_WEB_APP_URL"; // <-- ganti
+let TOKEN = null, BUMD = null, lastActivity = Date.now();
+
+async function api(payload){
+  const r = await fetch(WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  return r.json();
+}
+
+document.getElementById("btnLogin").onclick = async ()=>{
+  const u = document.getElementById("user").value.trim();
+  const p = document.getElementById("pass").value;
+  if (!u||!p){ document.getElementById("loginMsg").innerText="Masukkan username & password"; return; }
+  document.getElementById("loginMsg").innerText = "Memeriksa...";
+  const res = await api({ action:"login", username: u, password: p });
+  if (res.status === "success"){
+    TOKEN = res.token; BUMD = res.bumd;
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("inputForm").style.display = "block";
+    document.getElementById("bumdName").innerText = BUMD;
+    lastActivity = Date.now();
+    startAutoLogout();
+  } else {
+    document.getElementById("loginMsg").innerText = res.message || "Login gagal";
+  }
+};
+
+document.getElementById("btnSend").onclick = async ()=>{
+  if (!TOKEN) return alert("Belum login");
+  lastActivity = Date.now();
+  const resp = await api({
+    action: "input",
+    token: TOKEN,
+    pencapaian: document.getElementById("pencapaian").value,
+    target: document.getElementById("target").value,
+    persentase: document.getElementById("persentase").value,
+    catatan: document.getElementById("catatan").value
+  });
+  if (resp.status === "success"){
+    document.getElementById("inputMsg").style.color = "green";
+    document.getElementById("inputMsg").innerText = "Data tersimpan.";
+    document.getElementById("pencapaian").value = ""; document.getElementById("target").value = ""; document.getElementById("persentase").value = ""; document.getElementById("catatan").value = "";
+  } else {
+    document.getElementById("inputMsg").style.color = "red";
+    document.getElementById("inputMsg").innerText = resp.message || "Gagal menyimpan";
+  }
+};
+
+document.getElementById("btnLogout").onclick = async ()=>{
+  if (!TOKEN){ location.reload(); return; }
+  await api({ action:"logout", token: TOKEN });
+  TOKEN = null; BUMD = null;
+  document.getElementById("inputForm").style.display = "none";
+  document.getElementById("loginBox").style.display = "block";
+  document.getElementById("loginMsg").innerText = "Anda sudah logout";
+};
+
+function startAutoLogout(){
+  setInterval(async ()=>{
+    if (!TOKEN) return;
+    const diff = Date.now() - lastActivity;
+    if (diff > (10 * 60 * 1000)) { // 10 menit
+      await api({ action:"logout", token: TOKEN });
+      TOKEN = null; BUMD = null;
+      document.getElementById("inputForm").style.display = "none";
+      document.getElementById("loginBox").style.display = "block";
+      document.getElementById("loginMsg").innerText = "Sesi berakhir (10 menit tidak aktif)";
+    }
+  }, 5000);
+}
+</script>

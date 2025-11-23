@@ -1,0 +1,106 @@
+<!-- dashboard.html - embed to Canva (public) -->
+<div style="font-family:Inter,Arial, sans-serif; padding:18px; background:#f9f7f2; border-radius:8px;">
+  <img src="/mnt/data/logo-sumedang.png" alt="Logo Sumedang" style="height:56px; float:left; margin-right:12px;">
+  <h1 style="margin:0; padding-top:8px; font-size:28px; color:#1f2a44;">DASHBOARD KINERJA BUMD</h1>
+  <div style="clear:both;"></div>
+
+  <div id="cards" style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;"></div>
+
+  <div style="display:flex; gap:12px; margin-top:18px;">
+    <div style="flex:1; min-width:320px; background:#fff; padding:14px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <div id="chart"></div>
+      <h4>Rata-rata Persentase per BUMD</h4>
+      <div id="avgList"></div>
+    </div>
+
+    <div style="flex:1; min-width:360px; background:#fff; padding:14px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <h4>Input Terbaru</h4>
+      <table id="tb" style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead><tr style="background:#f3f3f3;"><th style="padding:8px;border:1px solid #eee;">Timestamp</th><th style="padding:8px;border:1px solid #eee;">BUMD</th><th style="padding:8px;border:1px solid #eee;">Pencapaian</th><th style="padding:8px;border:1px solid #eee;">Target</th><th style="padding:8px;border:1px solid #eee;">%</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const WEB_APP_URL = "REPLACE_WITH_YOUR_WEB_APP_URL"; // <-- ganti
+const API_DASH = WEB_APP_URL + "?action=dashboard";
+
+async function loadDashboard(){
+  try {
+    const r = await fetch(API_DASH);
+    const j = await r.json();
+    if (j.status !== "success") return console.error(j);
+
+    const data = j.data || [];
+    const bumds = j.bumds || [];
+
+    // build cards
+    const cards = document.getElementById("cards");
+    cards.innerHTML = "";
+    bumds.forEach(b=>{
+      const avg = calcAvgPercent(data, b.bumd);
+      const last = lastUpdate(data, b.bumd);
+      const el = document.createElement("div");
+      el.style.flex = "1 1 220px";
+      el.style.minWidth = "220px";
+      el.style.background = "#fff";
+      el.style.padding = "12px";
+      el.style.borderRadius = "10px";
+      el.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+      el.style.cursor = "pointer";
+      el.innerHTML = `
+        <div style="display:flex; gap:10px; align-items:center;">
+          <img src="${b.logo}" style="height:56px; width:56px; object-fit:contain; background:#fff; border-radius:6px;">
+          <div>
+            <div style="font-weight:700; font-size:16px;">${b.bumd}</div>
+            <div style="font-size:20px; color:#16324a; font-weight:700; margin-top:6px;">${avg.toFixed(1)}%</div>
+            <div style="font-size:12px; color:#666; margin-top:6px;">Terakhir: ${last}</div>
+          </div>
+        </div>`;
+      el.onclick = ()=> openDetail(b.bumd);
+      cards.appendChild(el);
+    });
+
+    // table
+    const tb = document.querySelector("#tb tbody");
+    tb.innerHTML = "";
+    data.slice().reverse().slice(0,20).forEach(rw=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td style="padding:6px;border:1px solid #eee;">${rw.timestamp}</td><td style="padding:6px;border:1px solid #eee;">${rw.bumd}</td><td style="padding:6px;border:1px solid #eee;">${rw.pencapaian}</td><td style="padding:6px;border:1px solid #eee;">${rw.target}</td><td style="padding:6px;border:1px solid #eee;">${rw.persentase}</td>`;
+      tb.appendChild(tr);
+    });
+
+    // avg list
+    const avgList = document.getElementById("avgList");
+    avgList.innerHTML = "<ul style='padding-left:18px;'>";
+    bumds.forEach(b=>{
+      avgList.innerHTML += `<li style="margin-bottom:6px;"><strong>${b.bumd}</strong> — ${calcAvgPercent(data,b.bumd).toFixed(1)}%</li>`;
+    });
+    avgList.innerHTML += "</ul>";
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function calcAvgPercent(data, bumd){
+  const arr = data.filter(x=>x.bumd===bumd).map(y=>Number(y.persentase)||0);
+  if (!arr.length) return 0;
+  return arr.reduce((a,b)=>a+b,0)/arr.length;
+}
+function lastUpdate(data, bumd){
+  const arr = data.filter(x=>x.bumd===bumd).map(x=>x.timestamp);
+  if (!arr.length) return "Belum ada";
+  return arr[arr.length-1];
+}
+function openDetail(bumd){
+  // buka halaman detail (dapat di-embed tersendiri atau membuka URL web app detail)
+  const url = WEB_APP_URL + "?action=detail&bumd=" + encodeURIComponent(bumd);
+  window.open(url, "_blank");
+}
+
+loadDashboard();
+setInterval(loadDashboard, 5000);
+</script>
