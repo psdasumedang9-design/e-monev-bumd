@@ -1,30 +1,68 @@
-<!-- detail.html -->
-<div style="font-family:Inter,Arial; padding:16px; background:#fff; border-radius:8px;">
-  <h2 id="title">Detail BUMD</h2>
-  <div id="content"></div>
-  <div style="margin-top:12px;">
-    <button id="expX" style="padding:8px 10px;">Export Excel</button>
-    <button id="expP" style="padding:8px 10px; margin-left:8px;">Export PDF</button>
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detail Laporan BUMD</title>
+
+<style>
+:root{--bg:#f7f9fb;--card:#ffffff;--accent:#1f6fb3;--muted:#6b7280}
+*{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;}
+body{margin:0;background:var(--bg);color:#0f172a;-webkit-font-smoothing:antialiased}
+.header{display:flex;align-items:center;gap:12px;padding:14px 18px;background:linear-gradient(90deg,#ffffffcc, #f1f5f9);box-shadow:0 1px 4px rgba(2,6,23,0.04)}
+.header img{height:46px}
+.container{max-width:1100px;margin:18px auto;padding:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 1px 6px rgba(2,6,23,0.04)}
+.table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden;box-shadow:0 1px 6px rgba(2,6,23,0.04)}
+.table th, .table td{padding:8px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px}
+.table thead th{background:#f8fafc;font-weight:600}
+.btn{display:inline-block;padding:8px 12px;border-radius:8px;background:var(--accent);color:white;border:none;cursor:pointer}
+.form-row{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.input, textarea, select{width:100%;padding:10px;border:1px solid #e6eef6;border-radius:8px;font-size:14px}
+.footer{padding:12px;text-align:center;color:var(--muted);font-size:13px;margin-top:18px}
+@media(max-width:600px){.header{padding:10px}.container{padding:8px}}
+</style>
+
+</head>
+<body>
+<div class="header">
+  <img src="/mnt/data/logo-sumedang.png" alt="Logo Sumedang">
+  <div>
+    <h2 style="margin:0">Detail Laporan</h2>
+    <div style="color:var(--muted);font-size:13px">Per BUMD</div>
   </div>
 </div>
+
+<div class="container">
+  <div class="card">
+    <h3 id="title">Detail</h3>
+    <div id="content"></div>
+    <div style="margin-top:12px"><button class="btn" id="expX">Export Excel</button><button class="btn" id="expP" style="background:#4c51bf;margin-left:8px">Export PDF</button></div>
+  </div>
+
+  <div class="footer">E-Monev — Pemda</div>
+</div>
+
 <script>
-const WEB = "https://script.google.com/macros/s/AKfycbxoR1Vp52KUmhJy1V7UK_P_ffV2hmgXuv7ZdU2ONRmTemAGEbouIBT0jFlSlUoq6VX2/exec
-"; // ganti
+const WEB = "https://script.google.com/macros/s/AKfycbxoR1Vp52KUmhJy1V7UK_P_ffV2hmgXuv7ZdU2ONRmTemAGEbouIBT0jFlSlUoq6VX2/exec";
 const params = new URLSearchParams(window.location.search);
-const name = params.get('bumd') || params.get('name') || "PDAM Tirta Medal";
-document.getElementById("title").innerText = "Detail "+name;
+const name = decodeURIComponent(params.get('bumd') || params.get('name') || 'PDAM Tirta Medal');
+document.getElementById('title').innerText = 'Detail ' + name;
 
 async function load(){
-  const res = await fetch(WEB + "?action=detail&bumd=" + encodeURIComponent(name));
+  const res = await fetch(WEB + '?action=detail&bumd=' + encodeURIComponent(name));
   const j = await res.json();
-  if (j.status !== "success"){ document.getElementById("content").innerText = j.message || "No data"; return; }
+  if(j.status !== 'success'){ document.getElementById('content').innerText = j.message || 'No data'; return; }
   const rows = j.data;
-  let html = "<table style='width:100%; border-collapse:collapse; font-size:13px;'><thead><tr style='background:#f3f3f3;'><th style='padding:8px;border:1px solid #eee;'>Timestamp</th><th style='padding:8px;border:1px solid #eee;'>Pencapaian</th><th style='padding:8px;border:1px solid #eee;'>Target</th><th style='padding:8px;border:1px solid #eee;'>%</th><th style='padding:8px;border:1px solid #eee;'>Catatan</th></tr></thead><tbody>";
-  rows.forEach(r=> html += `<tr><td style='padding:8px;border:1px solid #eee;'>${r.timestamp}</td><td style='padding:8px;border:1px solid #eee;'>${r.pencapaian}</td><td style='padding:8px;border:1px solid #eee;'>${r.target}</td><td style='padding:8px;border:1px solid #eee;'>${r.persentase}</td><td style='padding:8px;border:1px solid #eee;'>${r.catatan}</td></tr>`);
-  html += "</tbody></table>";
-  document.getElementById("content").innerHTML = html;
+  var html = '<table class="table"><thead><tr><th>Timestamp</th><th>Pencapaian</th><th>Target</th><th>%</th><th>Catatan</th></tr></thead><tbody>';
+  for(var i=0;i<rows.length;i++){ var r=rows[i]; html += '<tr><td>'+r.timestamp+'</td><td>'+r.pencapaian+'</td><td>'+r.target+'</td><td>'+r.persentase+'</td><td>'+r.catatan+'</td></tr>'; }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
 }
-document.getElementById("expX").onclick = () => window.open(WEB + "?action=export&type=excel&bumd=" + encodeURIComponent(name));
-document.getElementById("expP").onclick = () => window.open(WEB + "?action=export&type=pdf&bumd=" + encodeURIComponent(name));
+
+document.getElementById('expX').onclick = function(){ window.open(WEB + '?action=export&type=excel&bumd=' + encodeURIComponent(name)); };
+document.getElementById('expP').onclick = function(){ window.open(WEB + '?action=export&type=pdf&bumd=' + encodeURIComponent(name)); };
+
 load();
 </script>
+</body>
+</html>
